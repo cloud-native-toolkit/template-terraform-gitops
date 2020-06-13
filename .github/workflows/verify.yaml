@@ -1,0 +1,136 @@
+name: Verify and release module
+
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the master branch
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  verify:
+    # The type of runner that the job will run on
+    if: "!contains(github.event.commits[0].message, '[skip ci]')"
+    runs-on: ubuntu-latest
+    container: ibmgaragecloud/cli-tools:0.3.0-lite
+
+    strategy:
+      matrix:
+        platform: [iks, ocp3, ocp4]
+#      max-parallel: 1
+#      fail-fast: false
+
+    env:
+      HOME: /home/devops
+      NAMESPACE: ${{ secrets.NAMESPACE }}
+      TF_VAR_tools_namespace: ${{ secrets.NAMESPACE }}
+      TF_VAR_ibmcloud_api_key: ${{ secrets.IBMCLOUD_API_KEY }}
+      IBMCLOUD_API_KEY: ${{ secrets.IBMCLOUD_API_KEY }}
+      TF_VAR_resource_group_name: ${{ secrets.TEST_RESOURCE_GROUP }}
+      TF_VAR_region: ${{ secrets.TEST_REGION }}
+      TF_VAR_cluster_name: ${{ secrets[format('TEST_CLUSTER_{0}', matrix.platform)] }}
+      TF_VAR_cluster_type: ${{ matrix.platform }}
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      - name: Validate config
+        run: |
+          echo "Github sha: ${{ github.sha }}"
+          echo "Github ref: ${{ github.ref }}"
+          if [ -z "${NAMESPACE}" ]; then
+            echo "The NAMESPACE secret has not been set within the Git repo"
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v1
+
+      # Setups up the task
+      - name: Setup ${{ matrix.platform }}
+        run: |
+          ls -lA
+          mkdir -p /tmp/workspace/module
+          cp -R ./.github/scripts/* /tmp/workspace
+          cp -R ./test/stages/* /tmp/workspace
+          cp -R . /tmp/workspace/module
+
+      # Deploy
+      - name: Deploy ${{ matrix.platform }}
+        run: |
+          cd /tmp/workspace
+          ./apply.sh
+
+      # Test deploy
+      - name: Validate deploy ${{ matrix.platform }}
+        run: |
+          cd /tmp/workspace
+          ./validate-deploy.sh ${{ matrix.platform }} ${{ env.TF_VAR_tools_namespace }}
+
+      # Destroy
+      - name: Destroy ${{ matrix.platform }}
+        run: |
+          cd /tmp/workspace
+          ./destroy.sh
+
+      # Test destroy
+      - name: Validate destroy ${{ matrix.platform }}
+        run: |
+          cd /tmp/workspace
+          ./capture-cluster-state.sh ${{ matrix.platform }} $PWD/cluster-state/before $PWD/cluster-state/after
+          if diff -q $PWD/cluster-state/before $PWD/cluster-state/after 1> /dev/null; then
+            echo "Destroy completed successfully"
+          else
+            echo "Resources don't match"
+            diff $PWD/cluster-state/before $PWD/cluster-state/after
+            exit 1
+          fi
+
+  release:
+#    if: ${{ github.event_name == 'push' }}
+    needs: verify
+    runs-on: ubuntu-latest
+    container: ubuntu:latest
+    if: ${{ github.event_name == 'push' && !contains(github.event.commits[0].message, '[skip release]') }}
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      - name: Setup
+        run: |
+          apt-get update
+          apt-get install -y git
+          apt-get clean
+
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Setup node
+        uses: actions/setup-node@v2-beta
+        with:
+          node-version: '12'
+
+      - name: Install release-it
+        run: npm i -g release-it
+
+      - name: Determine release-type
+        id: release-type
+        run: |
+          release_type=$(echo "$MESSAGE" | sed -E "s/.*\[(major|minor|patch)\].*/\1/")
+          if [ -n "$release_type" ]; then
+            echo "::set-output name=release-type::$release_type"
+          else
+            echo "::set-output name=release-type::minor"
+          fi
+        env:
+          MESSAGE: ${{ github.event.commits[0].message }}
+
+      - name: Release
+        run: |
+          echo ${{ github.event_name }}
+          release-it --ci $RELEASE_TYPE -c .github/.release-it.yaml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TYPE: ${{ steps.release-type.outputs.release-type }}

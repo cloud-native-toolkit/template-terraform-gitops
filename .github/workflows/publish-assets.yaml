@@ -11,6 +11,7 @@ jobs:
 
     env:
       DIST_DIR: ./dist
+      PUBLISH_BRANCH: gh-pages
 
     steps:
       - name: Checkout
@@ -18,23 +19,16 @@ jobs:
         with:
           ref: ${{ github.event.release.tag_name }}
 
-      - name: Install yq
-        run: |
-          sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CC86BB64
-          sudo add-apt-repository ppa:rmescandon/yq
-          sudo apt update
-          sudo apt install yq -y
-
-      - name: Build module.yaml
-        run: |
-          ./.github/scripts/build-module-metadata.sh ${{ github.event.release.tag_name }} ${{ env.DIST_DIR }} ${{ github.repository }}
-
-      - name: Upload module.yaml
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build catalog
+        uses: ibm-garage-cloud/action-module-catalog@main
         with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ${{ env.DIST_DIR }}/module.yaml
-          asset_name: module.yaml
-          asset_content_type: application/octet-stream
+          tagName: ${{ github.event.release.tag_name }}
+          distDir: ${{ env.DIST_DIR }}
+          publishBranch: ${{ env.PUBLISH_BRANCH }}
+
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ${{ env.DIST_DIR }}
+          publish_branch: ${{ env.PUBLISH_BRANCH }}

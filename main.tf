@@ -1,29 +1,35 @@
 locals {
+  name      = "my-module"
+  chart_dir = "${path.cwd}/.tmp/${local.name}/chart/${local.name}"
+  ingress_host  = "${local.name}-${var.namespace}.${var.cluster_ingress_hostname}"
+  ingress_url   = "https://${local.ingress_host}"
+  service_url  = "http://${local.name}.${var.namespace}"
+  values_content = {
+  }
   layer = "services"
-  config_project = var.config_projects[local.layer]
   application_branch = "main"
-  config_namespace = "default"
-  ingress_host = "dashboard-${var.namespace}.${var.cluster_ingress_hostname}"
-  endpoint_url = "http${var.tls_secret_name != "" ? "s" : ""}://${local.ingress_host}"
+  layer_config = var.gitops_config[local.layer]
 }
 
-resource null_resource setup_application {
+resource null_resource setup_chart {
   provisioner "local-exec" {
-    command = "${path.module}/scripts/setup-application.sh '${var.application_repo}' '${var.application_paths[local.layer]}' '${var.namespace}' '${local.values_content}'"
+    command = "${path.module}/scripts/create-yaml.sh '${local.name}' '${local.chart_dir}'"
 
     environment = {
-      TOKEN = var.application_token
+      VALUES_CONTENT = yamlencode(local.values_content)
     }
   }
 }
 
-resource null_resource setup_argocd {
-  depends_on = [null_resource.setup_application]
+resource null_resource setup_gitops {
+  depends_on = [null_resource.setup_chart]
+
   provisioner "local-exec" {
-    command = "${path.module}/scripts/setup-argocd.sh '${var.config_repo}' '${var.config_paths[local.layer]}' '${local.config_project}' '${var.application_repo}' '${var.application_paths[local.layer]}/dashboard' '${var.namespace}' '${local.application_branch}'"
+    command = "${path.module}/scripts/setup-gitops.sh '${local.name}' '${local.chart_dir}' '${local.name}' '${local.application_branch}' '${var.namespace}'"
 
     environment = {
-      TOKEN = var.config_token
+      GIT_CREDENTIALS = jsonencode(var.git_credentials)
+      GITOPS_CONFIG = jsonencode(local.layer_config)
     }
   }
 }

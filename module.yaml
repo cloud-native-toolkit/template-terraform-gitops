@@ -4,9 +4,11 @@ description: ""
 tags:
   - tools
   - gitops
-  - dashboard
 versions:
-  - platforms: []
+  - platforms:
+      - kubernetes
+      - ocp3
+      - ocp4
     dependencies:
       - id: gitops
         refs:
@@ -25,34 +27,14 @@ versions:
           - source: github.com/cloud-native-toolkit/terraform-gitops-namespace.git
             version: ">= 1.0.0"
     variables:
-      - name: config_repo
+      - name: gitops_config
         moduleRef:
           id: gitops
-          output: config_repo
-      - name: config_token
+          output: gitops_config
+      - name: git_credentials
         moduleRef:
           id: gitops
-          output: config_token
-      - name: config_paths
-        moduleRef:
-          id: gitops
-          output: config_paths
-      - name: config_projects
-        moduleRef:
-          id: gitops
-          output: config_projects
-      - name: application_repo
-        moduleRef:
-          id: gitops
-          output: application_repo
-      - name: application_token
-        moduleRef:
-          id: gitops
-          output: application_token
-      - name: application_paths
-        moduleRef:
-          id: gitops
-          output: application_paths
+          output: git_credentials
       - name: cluster_type
         moduleRef:
           id: cluster

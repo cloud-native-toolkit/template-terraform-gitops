@@ -1,38 +1,14 @@
 #!/usr/bin/env bash
 
-SCRIPT_DIR=$(cd $(dirname $0); pwd -P)
+SCRIPT_DIR=$(cd $(dirname "$0"); pwd -P)
 
-REPO="$1"
-REPO_PATH="$2"
-NAMESPACE="$3"
-VALUES_CONTENT="$4"
+NAME="$1"
+REPO="$2"
+REPO_PATH="$3"
+NAMESPACE="$4"
+CONTENT_DIR="$5"
 
-REPO_DIR=".tmprepo-${NAMESPACE}"
-
-SEMAPHORE="${REPO//\//-}.semaphore"
-SEMAPHORE_ID="${SCRIPT_DIR//\//-}"
-
-while true; do
-  echo "Checking for semaphore"
-  if [[ ! -f "${SEMAPHORE}" ]]; then
-    echo -n "${SEMAPHORE_ID}" > "${SEMAPHORE}"
-
-    if [[ $(cat "${SEMAPHORE}") == "${SEMAPHORE_ID}" ]]; then
-      echo "Got the semaphore. Setting up gitops repo"
-      break
-    fi
-  fi
-
-  SLEEP_TIME=$((1 + $RANDOM % 10))
-  echo "  Waiting $SLEEP_TIME seconds for semaphore"
-  sleep $SLEEP_TIME
-done
-
-function finish {
-  rm "${SEMAPHORE}"
-}
-
-trap finish EXIT
+REPO_DIR=".tmprepo-payload-${NAMESPACE}"
 
 git config --global user.email "cloudnativetoolkit@gmail.com"
 git config --global user.name "Cloud-Native Toolkit"
@@ -45,10 +21,10 @@ cd "${REPO_DIR}" || exit 1
 
 mkdir -p "${REPO_PATH}"
 
-# insert logic here
+cp -R "${CONTENT_DIR}/"* "${REPO_PATH}"
 
 git add .
-git commit -m "Adds config for Dashboard"
+git commit -m "Adds payload yaml for ${NAME}"
 git push
 
 cd ..

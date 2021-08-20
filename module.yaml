@@ -26,6 +26,12 @@ versions:
         refs:
           - source: github.com/cloud-native-toolkit/terraform-gitops-namespace.git
             version: ">= 1.0.0"
+      - id: argocd_bootstrap
+        refs:
+          - source: github.com/cloud-native-toolkit/terraform-tools-argocd-bootstrap.git
+            version: ">= 1.0.0"
+          - source: github.com/cloud-native-toolkit/terraform-vsi-argocd-bootstrap.git
+            version: ">= 1.0.0"
     variables:
       - name: gitops_config
         moduleRef:
@@ -35,6 +41,10 @@ versions:
         moduleRef:
           id: gitops
           output: git_credentials
+      - name: server_name
+        moduleRef:
+          id: gitops
+          output: server_name
       - name: cluster_type
         moduleRef:
           id: cluster
@@ -51,3 +61,7 @@ versions:
         moduleRef:
           id: namespace
           output: name
+      - name: kubeseal_cert
+        moduleRef:
+          id: argocd_bootstrap
+          output: sealed_secrets_cert

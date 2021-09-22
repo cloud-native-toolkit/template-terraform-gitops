@@ -37,8 +37,8 @@ The module depends on the following software components:
 
 This module makes use of the output from other modules:
 
-- Cluster - github.com/ibm-garage-cloud/terraform-ibm-container-platform.git
-- Namespace - github.com/ibm-garage-clout/terraform-cluster-namespace.git
+- GitOps - github.com/cloud-native-toolkit/terraform-tools-gitops.git
+- Namespace - github.com/cloud-native-toolkit/terraform-gitops-namespace.git
 - etc
 
 ## Example usage

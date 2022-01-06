@@ -5,12 +5,11 @@ GIT_TOKEN=$(cat git_token)
 
 export KUBECONFIG=$(cat .kubeconfig)
 NAMESPACE=$(cat .namespace)
-BRANCH="main"
-SERVER_NAME="default"
-TYPE="base"
-LAYER="2-services"
-
-COMPONENT_NAME="my-module"
+COMPONENT_NAME=$(jq -r '.name // "my-module"' gitops-output.json)
+BRANCH=$(jq -r '.branch // "main"' gitops-output.json)
+SERVER_NAME=$(jq -r '.server_name // "default"' gitops-output.json)
+LAYER=$(jq -r '.layer_dir // "2-services"' gitops-output.json)
+TYPE=$(jq -r '.type // "base"' gitops-output.json)
 
 mkdir -p .testrepo
 
@@ -29,12 +28,12 @@ echo "Printing argocd/${LAYER}/cluster/${SERVER_NAME}/${TYPE}/${NAMESPACE}-${COM
 cat "argocd/${LAYER}/cluster/${SERVER_NAME}/${TYPE}/${NAMESPACE}-${COMPONENT_NAME}.yaml"
 
 if [[ ! -f "payload/${LAYER}/namespace/${NAMESPACE}/${COMPONENT_NAME}/values.yaml" ]]; then
-  echo "Application values not found - payload/2-services/namespace/${NAMESPACE}/${COMPONENT_NAME}/values.yaml"
+  echo "Application values not found - payload/${LAYER}/namespace/${NAMESPACE}/${COMPONENT_NAME}/values.yaml"
   exit 1
 fi
 
 echo "Printing payload/${LAYER}/namespace/${NAMESPACE}/${COMPONENT_NAME}/values.yaml"
-cat "payload/${LAYER}namespace/${NAMESPACE}/${COMPONENT_NAME}/values.yaml"
+cat "payload/${LAYER}/namespace/${NAMESPACE}/${COMPONENT_NAME}/values.yaml"
 
 count=0
 until kubectl get namespace "${NAMESPACE}" 1> /dev/null 2> /dev/null || [[ $count -eq 20 ]]; do

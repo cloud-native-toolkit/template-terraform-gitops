@@ -60,6 +60,7 @@ variable "git_credentials" {
     token = string
   }))
   description = "The credentials for the gitops repo(s)"
+  sensitive   = true
 }
 
 variable "namespace" {

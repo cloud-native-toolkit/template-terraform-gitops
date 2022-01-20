@@ -20,21 +20,13 @@ jobs:
           ref: ${{ github.event.release.tag_name }}
 
       - name: Build catalog
-        uses: cloud-native-toolkit/action-module-catalog@v2
+        uses: cloud-native-toolkit/action-module-metadata-create@v1
         with:
           tagName: ${{ github.event.release.tag_name }}
           distDir: ${{ env.DIST_DIR }}
           publishBranch: ${{ env.PUBLISH_BRANCH }}
-
-      - uses: actions/setup-node@v2-beta
-        with:
-          node-version: '14'
-
-      - name: Verify module schema
-        run: |
-          npm i -g ajv-cli
-          curl -LsO https://modules.cloudnativetoolkit.dev/schemas/module.json
-          ajv test -s module.json -d ${{ env.DIST_DIR }}/index.yaml --valid
+          strict: false
+          validate: true
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3

@@ -29,19 +29,6 @@ resource null_resource create_yaml {
 resource null_resource setup_gitops {
   depends_on = [null_resource.create_yaml]
 
-  provisioner "local-exec" {
-    command = "${local.bin_dir}/igc gitops-module '${local.name}' -n '${var.namespace}' --contentDir '${local.yaml_dir}' --serverName '${var.server_name}' -l '${local.layer}' --type '${local.type}' --debug"
-
-    environment = {
-      GIT_CREDENTIALS = yamlencode(nonsensitive(var.git_credentials))
-      GITOPS_CONFIG   = yamlencode(var.gitops_config)
-    }
-  }
-}
-
-resource null_resource setup_gitops {
-  depends_on = [null_resource.create_yaml]
-
   triggers = {
     name = local.name
     namespace = var.namespace

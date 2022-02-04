@@ -15,6 +15,7 @@ jobs:
         name: Set up variables
         env:
           GIT_ORG: ${{ secrets.GIT_ORG }}
+          GITHUB_REPOSITORY: ${{ env.GITHUB_REPOSITORY }}
         shell: bash
         run: |
           repo=$(echo ${GITHUB_REPOSITORY} | sed -E "s~.*/[^-]+-(.*)~\1~g")
@@ -26,13 +27,18 @@ jobs:
           echo "::set-output name=org::$org"
 
       - name: Delete test repo
+        env:
+          GITHUB_REPOSITORY: ${{ env.GITHUB_REPOSITORY }}
+          GITHUB_TOKEN: ${{ secrets.GIT_ADMIN_TOKEN }}
         run: |
           GIT_SLUG=${{ steps.variables.outputs.org }}/${{ steps.variables.outputs.repo }}
-          if [[ "${GIT_SLUG}" == ${{ GITHUB_REPOSITORY }} ]]; then
+          if [[ -z "${{ steps.variables.outputs.org }}" ]] || [[ -z "${{ steps.variables.outputs.repo }}" ]]; then
+            echo "GIT_SLUG value is invalid"
+            exit 1
+          fi
+          if [[ "${GIT_SLUG}" == "${GITHUB_REPOSITORY}" ]]; then
             echo "You cannot delete the current repository!!!!"
             exit 1
           fi
 
           gh repo delete ${GIT_SLUG} --confirm
-        env:
-          GITHUB_TOKEN: ${{ secrets.GIT_ADMIN_TOKEN }}

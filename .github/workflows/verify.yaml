@@ -18,7 +18,9 @@ jobs:
     strategy:
       matrix:
         testcase:
+          #comment-out or remove either of the platforms you do not need.  ocp4_latest is IBM Cloud
           - ocp4_latest_gitops
+          - aws_latest_gitops
       #      max-parallel: 1
       fail-fast: false
 
@@ -34,6 +36,11 @@ jobs:
         name: Set up variables
         env:
           GIT_ORG: ${{ secrets.GIT_ORG }}
+          AWS_CLUSTER_USERNAME: ${{ secrets.AWS_CLUSTER_USERNAME }}
+          AWS_CLUSTER_PASSWORD: ${{ secrets.AWS_CLUSTER_PASSWORD }}
+          IBM_CLUSTER_USERNAME: "apikey"
+          IBM_CLUSTER_PASSWORD: ${{ secrets.IBMCLOUD_API_KEY }}
+          ENVIRONMENT: ${{ matrix.testcase }}
         shell: bash
         run: |
           repo=$(echo ${GITHUB_REPOSITORY} | sed -E "s~.*/[^-]+-(.*)~\1~g")
@@ -43,6 +50,14 @@ jobs:
           org="${GIT_ORG:-cloud-native-toolkit-test}"
           echo "Org: $org"
           echo "::set-output name=org::$org"
+
+          if [[ $ENVIRONMENT =~ ^aws ]]; then
+            echo "::set-output name=CLUSTER_USERNAME::$AWS_CLUSTER_USERNAME"
+            echo "::set-output name=CLUSTER_PASSWORD::$AWS_CLUSTER_PASSWORD"
+          else 
+            echo "::set-output name=CLUSTER_USERNAME::$IBM_CLUSTER_USERNAME"
+            echo "::set-output name=CLUSTER_PASSWORD::$IBM_CLUSTER_PASSWORD"
+          fi
 
       - name: Verify deploy on ${{ matrix.testcase }}
         uses: cloud-native-toolkit/action-module-verify-deploy@main
@@ -56,8 +71,8 @@ jobs:
           TF_VAR_git_repo: ${{ steps.variables.outputs.repo }}
           TF_VAR_bootstrap_prefix: ${{ steps.variables.outputs.repo }}
           TF_VAR_cp_entitlement_key: ${{ secrets.CP_ENTITLEMENT_KEY }}
-          TF_VAR_ibmcloud_api_key: ${{ secrets.IBMCLOUD_API_KEY }}
-          IBMCLOUD_API_KEY: ${{ secrets.IBMCLOUD_API_KEY }}
+          TF_VAR_cluster_username: ${{ steps.variables.outputs.CLUSTER_USERNAME }}
+          TF_VAR_cluster_password: ${{ steps.variables.outputs.CLUSTER_PASSWORD }}
 
       - name: Verify destroy on ${{ matrix.testcase }}
         uses: cloud-native-toolkit/action-module-verify-destroy@main
@@ -71,8 +86,8 @@ jobs:
           TF_VAR_git_repo: ${{ steps.variables.outputs.repo }}
           TF_VAR_bootstrap_prefix: ${{ steps.variables.outputs.repo }}
           TF_VAR_cp_entitlement_key: ${{ secrets.CP_ENTITLEMENT_KEY }}
-          TF_VAR_ibmcloud_api_key: ${{ secrets.IBMCLOUD_API_KEY }}
-          IBMCLOUD_API_KEY: ${{ secrets.IBMCLOUD_API_KEY }}
+          TF_VAR_cluster_username: ${{ steps.variables.outputs.CLUSTER_USERNAME }}
+          TF_VAR_cluster_password: ${{ steps.variables.outputs.CLUSTER_PASSWORD }}
 
   verifyMetadata:
     runs-on: ubuntu-latest

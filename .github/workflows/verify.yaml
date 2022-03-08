@@ -20,7 +20,7 @@ jobs:
         testcase:
           #comment-out or remove either of the platforms you do not need.  ocp4_latest is IBM Cloud
           - ocp4_latest_gitops
-          - aws_latest_gitops
+          # - aws_latest_gitops
       max-parallel: 1
       fail-fast: false
 

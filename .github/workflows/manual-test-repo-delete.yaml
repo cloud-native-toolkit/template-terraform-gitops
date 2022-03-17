@@ -7,38 +7,9 @@ on:
         required: true
 
 jobs:
-  create_repo:
+  delete_repo:
     if: ${{ github.event.inputs.confirm == 'Delete' }}
-    runs-on: ubuntu-latest
-    steps:
-      - id: variables
-        name: Set up variables
-        env:
-          GIT_ORG: ${{ secrets.GIT_ORG }}
-          GITHUB_REPOSITORY: ${{ env.GITHUB_REPOSITORY }}
-        shell: bash
-        run: |
-          repo=$(echo ${GITHUB_REPOSITORY} | sed -E "s~.*/[^-]+-(.*)~\1-${{matrix.testcase}}~g")
-          echo "Repo: $repo"
-          echo "::set-output name=repo::$repo"
-
-          org="${GIT_ORG:-cloud-native-toolkit-test}"
-          echo "Org: $org"
-          echo "::set-output name=org::$org"
-
-      - name: Delete test repo
-        env:
-          GITHUB_REPOSITORY: ${{ env.GITHUB_REPOSITORY }}
-          GITHUB_TOKEN: ${{ secrets.GIT_ADMIN_TOKEN }}
-        run: |
-          GIT_SLUG=${{ steps.variables.outputs.org }}/${{ steps.variables.outputs.repo }}
-          if [[ -z "${{ steps.variables.outputs.org }}" ]] || [[ -z "${{ steps.variables.outputs.repo }}" ]]; then
-            echo "GIT_SLUG value is invalid"
-            exit 1
-          fi
-          if [[ "${GIT_SLUG}" == "${GITHUB_REPOSITORY}" ]]; then
-            echo "You cannot delete the current repository!!!!"
-            exit 1
-          fi
-
-          gh repo delete ${GIT_SLUG} --confirm
+    uses: cloud-native-toolkit/action-workflows/.github/workflows/manual-test-repo-delete.yaml@v1
+    secrets:
+      GIT_ORG: ${{ secrets.GIT_ORG }}
+      GIT_ADMIN_TOKEN: ${{ secrets.GIT_ADMIN_TOKEN }}

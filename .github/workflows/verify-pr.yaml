@@ -14,12 +14,9 @@ jobs:
     with:
       testcase: ocp4_latest_gitops
     secrets:
-      GIT_ORG: ${{ secrets.GIT_ORG }}
       AWS_CLUSTER_USERNAME: ${{ secrets.AWS_CLUSTER_USERNAME }}
       AWS_CLUSTER_PASSWORD: ${{ secrets.AWS_CLUSTER_PASSWORD }}
       IBMCLOUD_API_KEY: ${{ secrets.IBMCLOUD_API_KEY }}
-      GIT_ADMIN_USERNAME: ${{ secrets.GIT_ADMIN_USERNAME }}
-      GIT_ADMIN_TOKEN: ${{ secrets.GIT_ADMIN_TOKEN }}
       CP_ENTITLEMENT_KEY: ${{ secrets.CP_ENTITLEMENT_KEY }}
 
   verifyMetadata:

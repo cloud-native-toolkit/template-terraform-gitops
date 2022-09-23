@@ -9,6 +9,9 @@ versions:
       - kubernetes
       - ocp3
       - ocp4
+    providers:
+      - name: gitops
+        source: "cloud-native-toolkit/gitops"
     dependencies:
       - id: gitops
         refs:
